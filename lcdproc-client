@@ -1,0 +1,138 @@
+#!/usr/bin/python
+
+import os, sys
+from time import sleep
+from datetime import datetime
+
+now = datetime.now
+
+from lcdproc.server import Server
+
+import threading
+import uuid
+import signal
+import subprocess
+import re
+import psutil
+
+class ScreenBase(threading.Thread):
+    def __init__(self, lcd, duration=5, name=None):
+        threading.Thread.__init__(self)
+        self.lcd = lcd
+        if name:
+            self.name = name
+        else:
+            self.name = str(uuid.uuid1())
+        self.screen = self.lcd.add_screen(self.name)
+        self.screen.set_duration(duration)
+
+class Clock(ScreenBase):
+    def run(self):
+        self.screen.set_heartbeat("off")
+
+        date = self.screen.add_string_widget("date", "date", 5, 1)
+        time = self.screen.add_string_widget("time", "time", 5, 2)
+
+        while True:
+            date.set_text(now().strftime("%X"))
+            time.set_text(now().strftime("%x"))
+            sleep(1)
+
+class MainScreen(ScreenBase):
+    def getCPUTemp(self):
+        temp_raw = subprocess.check_output(["vcgencmd", "measure_temp"]).decode("utf8")
+        temp = re.findall(r"[\d\.]+", temp_raw)[0]
+        return int(round(float(temp)))
+
+    def run(self):
+        self.screen.set_heartbeat("off")
+        time = self.screen.add_string_widget("time", "time", 1, 1)
+        status = self.screen.add_string_widget("status", "xxx", 1, 2)
+
+        while True:
+            time.set_text(now().strftime("%b %d %a %H:%M"))
+            cpu = psutil.cpu_percent()
+            if cpu >= 99.4:
+                cpu = '--'
+            else:
+                cpu = "{0:02.0f}".format(cpu)
+            status.set_text("    {0}% {1}C".format(cpu, self.getCPUTemp()))
+            sleep(3) 
+
+class Test(ScreenBase):
+    def run(self):
+        self.screen.set_heartbeat("off")
+
+        coor = self.screen.add_string_widget(uuid.uuid1(), "0123456789", 4, 1)
+        chars = self.screen.add_string_widget(uuid.uuid1(), "----------", 4, 2) 
+        prefix = self.screen.add_string_widget(uuid.uuid1(), "00", 1, 2)
+
+        while True:
+            for i in range(25):
+                prefix.set_text("{0:02d}".format(i))
+                s = ''
+                for j in range(10):
+                    s = s + (chr(i*10+j))
+                chars.set_text(s)
+                sleep(2)
+
+class Boinc(ScreenBase):
+    def getCPUTemp(self):
+        temp_raw = subprocess.check_output(["vcgencmd", "measure_temp"]).decode("utf8")
+        temp = re.findall(r"[\d\.]+", temp_raw)[0]
+        return int(round(float(temp)))
+
+    def getCPU(self):
+        ret = psutil.cpu_percent()
+        if ret >= 99.4:
+            ret = '--%'
+        else:
+            ret = '{0:02d}%'.format(int(ret))
+        return ret
+
+    def run(self):
+        self.screen.set_heartbeat("off")
+        title = self.screen.add_string_widget(uuid.uuid1(), "- BOINC -", 1, 1)
+        text = self.screen.add_string_widget(uuid.uuid1(), "----", 1, 2)
+        cpu = self.screen.add_string_widget(uuid.uuid1(), "--% --", 11, 2)
+        time = self.screen.add_string_widget(uuid.uuid1(), "--:--", 12, 1)
+
+        while True:
+            status = subprocess.check_output("/usr/bin/boinccmd --get_simple_gui_info | /bin/grep 'fraction done' | /usr/bin/cut -d ':' -f2", shell=True).decode("utf8").split('\n')
+            for i in range(len(status)):
+                try: 
+                    x = float(status[i]) * 100.0
+                    s = '{0}:{1:0.2f}% '.format(i, x)
+                except:
+                    pass
+                text.set_text(s)
+                cpu.set_text(self.getCPU() + ' ' + str(self.getCPUTemp()) + 'C')
+                time.set_text(now().strftime("%H:%M"))
+                sleep(2)
+
+class IPAddr(ScreenBase):
+    def run(self):
+        self.screen.set_heartbeat("off")
+
+        while True:
+            sleep(60)
+
+if __name__ == "__main__":
+    print("Daemon is on\npid:{0}".format(os.getpid()))
+    lcd = Server(debug=False)
+    lcd.start_session()
+
+    pool = []
+    # pool.append(Test(lcd))
+    pool.append(MainScreen(lcd, duration=5))
+    pool.append(Boinc(lcd, duration=9))
+    # pool.append(Clock(lcd, duration=15))
+    # pool.append(IPAddr(lcd, duration=2))
+
+    for t in pool:
+        t.setDaemon(True)
+        t.start()
+
+    while True:
+        sleep(60)
+
