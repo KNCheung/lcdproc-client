@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     try:
         f = open("/tmp/clock", "w")
-        f.write("pid\t{0}".format(os.getpid()))
+        f.write("{0}".format(os.getpid()))
         f.close()
     except:
         pass
@@ -29,9 +29,9 @@ if __name__ == "__main__":
 
     pool = []
     # pool.append(Test(lcd))
-    pool.append(LargeClock(lcd))
+    pool.append(LargeClock(lcd, duration=10))
     # pool.append(MainScreen(lcd, duration=5))
-    pool.append(Boinc(lcd, duration=9))
+    pool.append(Boinc(lcd, duration=5))
     # pool.append(ClassicClock(lcd, duration=15))
     # pool.append(IPAddr(lcd, duration=2))
 

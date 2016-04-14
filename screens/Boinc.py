@@ -42,5 +42,5 @@ class Boinc(ScreenBase):
                 text.set_text(s)
                 cpu.set_text(self.getCPU() + ' ' + str(self.getCPUTemp()) + 'C')
                 time.set_text(now().strftime("%H:%M"))
-                sleep(2)
+                sleep(1)
 

@@ -8,7 +8,6 @@ import psutil
 
 class LargeClock(ScreenBase):
     def run(self): 
-        self.screen.set_duration(5)
         h1 = self.screen.add_number_widget("h1", x=1, value=0)
         h2 = self.screen.add_number_widget("h2", x=4, value=0)
         m1 = self.screen.add_number_widget("m1", x=8, value=0)
