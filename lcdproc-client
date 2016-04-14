@@ -64,16 +64,14 @@ class Test(ScreenBase):
         self.screen.set_heartbeat("off")
 
         coor = self.screen.add_string_widget(uuid.uuid1(), "0123456789", 4, 1)
-        chars = self.screen.add_string_widget(uuid.uuid1(), "----------", 4, 2) 
+        chars = map(lambda n: self.screen.add_string_widget(str(n), "-", 4 + n, 2), range(10))
         prefix = self.screen.add_string_widget(uuid.uuid1(), "00", 1, 2)
 
         while True:
             for i in range(25):
                 prefix.set_text("{0:02d}".format(i))
-                s = ''
                 for j in range(10):
-                    s = s + (chr(i*10+j))
-                chars.set_text(s)
+                    chars[j].set_text(chr(i*10+j))
                 sleep(2)
 
 class Boinc(ScreenBase):
@@ -117,8 +115,46 @@ class IPAddr(ScreenBase):
         while True:
             sleep(60)
 
+class Notify(threading.Thread):
+    def __init__(self, lcd, msg, duration=5):
+        threading.Thread.__init__(self)
+        self.lcd = lcd
+
+        self.name = str(uuid.uuid1())
+        self.screen = self.lcd.add_screen(self.name)
+        self.screen.set_duration(duration)
+
+        self.msg = msg
+        self.duration = duration
+
+    def run(self):
+        self.screen.set_heartbeat("off")
+
+        msg_splited = self.msg.split("\n")
+
+        line1 = self.screen.add_string_widget(uuid.uuid1(), msg_splited[0], 1, 1) 
+        line2 = self.screen.add_string_widget(uuid.uuid1(), msg_splited[1], 1, 2)
+
+        self.screen.set_priority("alert")
+        sleep(self.duration)
+
+        self.lcd.del_screen(self.name)
+
 if __name__ == "__main__":
-    print("Daemon is on\npid:{0}".format(os.getpid()))
+    print("pid:{0}".format(os.getpid()))
+
+    try:
+        f = open("/tmp/clock", "w")
+        f.write("pid\t{0}".format(os.getpid()))
+        f.close()
+    except:
+        pass
+
+    try:
+        os.mkfifo("/tmp/clock_fifo")
+    except:
+        print("FIFO file exists")
+
     lcd = Server(debug=False)
     lcd.start_session()
 
@@ -133,6 +169,21 @@ if __name__ == "__main__":
         t.setDaemon(True)
         t.start()
 
+    fifo = open('/tmp/clock_fifo', 'r')
     while True:
-        sleep(60)
+        s = fifo.readline()
+        if not s:
+            sleep(1)
+        else:
+            line1 = s
+            s = fifo.readline()
+            if s:
+                line2 = s
+            else:
+                line2 = ''
+            notification = Notify(lcd, line1+line2, 3)
+            notification.start()
+            notification.join()
+            while fifo.readline():
+                pass
 
