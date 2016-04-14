@@ -26,10 +26,11 @@ class Boinc(ScreenBase):
 
     def run(self):
         self.screen.set_heartbeat("off")
-        title = self.screen.add_string_widget(uuid.uuid1(), "- BOINC -", 1, 1)
+        title = self.screen.add_string_widget(uuid.uuid1(), "= BOINC =", 1, 1)
         text = self.screen.add_string_widget(uuid.uuid1(), "----", 1, 2)
         cpu = self.screen.add_string_widget(uuid.uuid1(), "--% --", 11, 2)
-        time = self.screen.add_string_widget(uuid.uuid1(), "--:--", 12, 1)
+        time = self.screen.add_string_widget(uuid.uuid1(), "--:--", 11, 1)
+        second = self.screen.add_vbar_widget(uuid.uuid1(), x=16, y=1, length=0)
 
         while True:
             status = subprocess.check_output("/usr/bin/boinccmd --get_simple_gui_info | /bin/grep 'fraction done' | /usr/bin/cut -d ':' -f2", shell=True).decode("utf8").split('\n')
@@ -42,5 +43,6 @@ class Boinc(ScreenBase):
                 text.set_text(s)
                 cpu.set_text(self.getCPU() + ' ' + str(self.getCPUTemp()) + 'C')
                 time.set_text(now().strftime("%H:%M"))
+                second.set_length(now().second >> 3)
                 sleep(1)
 
