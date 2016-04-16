@@ -13,13 +13,8 @@ import click
 
 from screens import *
 
-@click.command()
-@click.argument('command', default='start', type=click.Choice(['start', 'stop']))
-@click.option('-c', '--configure-file', default='/etc/lcdproc-client.conf', help='Configure file')
-@click.option('--pipe', default='/tmp/lcdproc-client.fifo', help='Select pipe file\'s location')
-@click.option('--pid', default='/tmp/lcdproc-client.pid', help='Select pid file\'s location')
-@click.option('-s', '--screen', default='', help='display only one screen')
-def main(command, configure_file, pipe, pid, screen):
+
+def start(configure_file, pipe, pid, screen):
     print("pid:{0}".format(os.getpid())) 
     try:
         f = open(pid, "w")
@@ -74,6 +69,25 @@ def main(command, configure_file, pipe, pid, screen):
             notification.join()
             while fifo.readline():
                 pass
+
+def stop():
+    pass
+
+@click.command()
+@click.argument('command', default='start')
+@click.option('-c', '--configure-file', default='/etc/lcdproc-client.conf', help='Configure file')
+@click.option('--pipe', default='/tmp/lcdproc-client.fifo', help='Select pipe file\'s location')
+@click.option('--pid', default='/tmp/lcdproc-client.pid', help='Select pid file\'s location')
+@click.option('-s', '--screen', default='', help='display only one screen')
+def main(command, configure_file, pipe, pid, screen):
+    cmd = command.lower()
+    if command == 'start':
+        start(configure_file, pipe, pid, screen)
+    elif command == 'stop':
+        stop()
+    elif command == 'restart':
+        stop()
+        start(configure_file, pipe, pid, screen)
 
 if __name__ == "__main__":
     main()
