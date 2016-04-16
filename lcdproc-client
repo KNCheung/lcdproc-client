@@ -7,6 +7,8 @@ from lcdproc.server import Server
 import threading
 import subprocess
 
+import ConfigParser
+
 from screens import *
 
 if __name__ == "__main__":
@@ -24,16 +26,17 @@ if __name__ == "__main__":
     except:
         print("FIFO file exists")
 
+    config = ConfigParser.SafeConfigParser()
+    config.read('/etc/lcdproc-client.conf')
+
     lcd = Server(debug=False)
     lcd.start_session()
 
     pool = []
-    # pool.append(Test(lcd))
-    pool.append(LargeClock(lcd, duration=10))
-    # pool.append(MainScreen(lcd, duration=5))
-    pool.append(Boinc(lcd, duration=5))
-    # pool.append(ClassicClock(lcd, duration=15))
-    # pool.append(IPAddr(lcd, duration=2))
+
+    for scr in config.sections():
+        if config.has_option(scr, 'active') and config.getboolean(scr, 'active'): 
+            pool.append(screens[scr](lcd, configFile=config))
 
     for t in pool:
         t.setDaemon(True)

@@ -18,9 +18,12 @@ screens['IPAddr'] = IPAddr
 from Notify import Notify
 screens['Notify'] = Notify
 
-from Test import Test
-screens['Test'] = Test
+from ListChars import ListChars
+screens['ListChars'] = ListChars
 
 from LargeClock import LargeClock
 screens['LargeClock'] = LargeClock
+
+from CPUStatus import CPUStatus
+screens['CPUStatus'] = CPUStatus
 

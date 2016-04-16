@@ -15,7 +15,6 @@ class MainScreen(ScreenBase):
         return int(round(float(temp)))
 
     def run(self):
-        self.screen.set_heartbeat("off")
         time = self.screen.add_string_widget("time", "time", 1, 1)
         status = self.screen.add_string_widget("status", "xxx", 1, 2)
 
