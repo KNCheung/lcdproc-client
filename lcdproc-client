@@ -15,14 +15,14 @@ if __name__ == "__main__":
     print("pid:{0}".format(os.getpid()))
 
     try:
-        f = open("/tmp/clock", "w")
-        f.write("{0}".format(os.getpid()))
+        f = open("/run/lcdproc-client.pid", "w")
+        f.write("{0}\n".format(os.getpid()))
         f.close()
     except:
         pass
 
     try:
-        os.mkfifo("/tmp/clock_fifo")
+        os.mkfifo("/tmp/lcdproc-client.fifo")
     except:
         print("FIFO file exists")
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         t.setDaemon(True)
         t.start()
 
-    fifo = open('/tmp/clock_fifo', 'r')
+    fifo = open("/tmp/lcdproc-client.fifo", 'r')
     while True:
         s = fifo.readline()
         if not s:
