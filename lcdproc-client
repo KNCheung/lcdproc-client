@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import os, sys
+import os, sys, signal
+import fcntl
 from time import sleep
 from lcdproc.server import Server
 
@@ -13,22 +14,38 @@ import click
 
 from screens import *
 
+def start(configure_file, pipe, pidFile, screen):
+    def sigTermHandler(f):
+        def handler(a, b):
+            print("received SIGTERM")
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            f.close()
+            sys.exit(0)
+        return handler
 
-def start(configure_file, pipe, pid, screen):
+    print("Staring...")
     print("pid:{0}".format(os.getpid())) 
     try:
-        f = open(pid, "w")
+        f = open(pidFile, "a+")
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        f.seek(0)
+        f.truncate()
         f.write("{0}\n".format(os.getpid()))
-        f.close()
-    except:
+        f.flush()
+        f.seek(0)
+    except IOError as e:
         print("lcdproc-client's running")
-        sys.exit(1)
+        f = open(pidFile, "r")
+        print("{0}".format(f.read()))
+        f.close()
+        sys.exit(11)
 
     try:
         os.mkfifo(pipe)
     except:
         print("PIPE file exists")
 
+    signal.signal(signal.SIGTERM, sigTermHandler(f))
     config = ConfigParser.SafeConfigParser()
     config.read(configure_file)
 
@@ -70,24 +87,40 @@ def start(configure_file, pipe, pid, screen):
             while fifo.readline():
                 pass
 
-def stop():
-    pass
+def stop(pidFile):
+    print("Stopping...")
+    if os.path.exists(pidFile):
+        f = open(pidFile, 'a+')
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            f = open(pidFile, 'r')
+            pid = int(f.read())
+            f.close()
+            print('PID:{0} is running'.format(pid))
+            os.kill(pid, signal.SIGTERM)
+            return
+        f.close()
+    print("Not running")
 
 @click.command()
 @click.argument('command', default='start')
 @click.option('-c', '--configure-file', default='/etc/lcdproc-client.conf', help='Configure file')
 @click.option('--pipe', default='/tmp/lcdproc-client.fifo', help='Select pipe file\'s location')
-@click.option('--pid', default='/tmp/lcdproc-client.pid', help='Select pid file\'s location')
+@click.option('-p', '--pid', default='/tmp/lcdproc-client.pid', help='Select pid file\'s location')
 @click.option('-s', '--screen', default='', help='display only one screen')
 def main(command, configure_file, pipe, pid, screen):
     cmd = command.lower()
     if command == 'start':
         start(configure_file, pipe, pid, screen)
     elif command == 'stop':
-        stop()
+        stop(pid)
     elif command == 'restart':
-        stop()
+        stop(pid)
+        sleep(1)
         start(configure_file, pipe, pid, screen)
+    else:
+        print("unknow command: {0}".format(command))
 
 if __name__ == "__main__":
     main()
