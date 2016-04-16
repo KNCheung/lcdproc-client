@@ -9,40 +9,55 @@ import subprocess
 
 import ConfigParser
 
+import click
+
 from screens import *
 
-if __name__ == "__main__":
-    print("pid:{0}".format(os.getpid()))
-
+@click.command()
+@click.argument('command', default='start', type=click.Choice(['start', 'stop']))
+@click.option('-c', '--configure-file', default='/etc/lcdproc-client.conf', help='Configure file')
+@click.option('--pipe', default='/tmp/lcdproc-client.fifo', help='Select pipe file\'s location')
+@click.option('--pid', default='/tmp/lcdproc-client.pid', help='Select pid file\'s location')
+@click.option('-s', '--screen', default='', help='display only one screen')
+def main(command, configure_file, pipe, pid, screen):
+    print("pid:{0}".format(os.getpid())) 
     try:
-        f = open("/run/lcdproc-client.pid", "w")
+        f = open(pid, "w")
         f.write("{0}\n".format(os.getpid()))
         f.close()
     except:
-        pass
+        print("lcdproc-client's running")
+        sys.exit(1)
 
     try:
-        os.mkfifo("/tmp/lcdproc-client.fifo")
+        os.mkfifo(pipe)
     except:
-        print("FIFO file exists")
+        print("PIPE file exists")
 
     config = ConfigParser.SafeConfigParser()
-    config.read('/etc/lcdproc-client.conf')
+    config.read(configure_file)
 
     lcd = Server(debug=False)
     lcd.start_session()
 
     pool = []
 
-    for scr in config.sections():
-        if config.has_option(scr, 'active') and config.getboolean(scr, 'active'): 
-            pool.append(screens[scr](lcd, configFile=config))
+    if screen:
+        try:
+            pool.append(screens[screen](lcd, configFile=config))
+        except KeyError:
+            print("Screen <{0}> Not Found".format(screen))
+            sys.exit(2)
+    else:
+        for scr in config.sections():
+            if config.has_option(scr, 'active') and config.getboolean(scr, 'active'): 
+                pool.append(screens[scr](lcd, configFile=config))
 
     for t in pool:
         t.setDaemon(True)
         t.start()
 
-    fifo = open("/tmp/lcdproc-client.fifo", 'r')
+    fifo = open(pipe, 'r')
     while True:
         s = fifo.readline()
         if not s:
@@ -60,3 +75,5 @@ if __name__ == "__main__":
             while fifo.readline():
                 pass
 
+if __name__ == "__main__":
+    main()
