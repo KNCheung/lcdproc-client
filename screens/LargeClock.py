@@ -8,7 +8,20 @@ import psutil
 
 import Adafruit_DHT as dht
 
+from Timer import PeriodicTimer
+
 class LargeClock(ScreenBase):
+    dot = ' '
+    def tickerWrapper(self, a, b):
+        def f():
+            a.set_text(self.dot)
+            b.set_text(self.dot)
+            if self.dot == ' ':
+                self.dot = '.'
+            else:
+                self.dot = ' '
+        return f
+
     def run(self): 
         pin = self.intConfig('sensorPort', 18)
         
@@ -18,8 +31,12 @@ class LargeClock(ScreenBase):
         m2 = self.screen.add_number_widget("m2", x=11, value=0)
         temp = self.screen.add_string_widget("temp", '--', x=15, y=1)
         humidity = self.screen.add_string_widget("humidity", '--', x=15, y=2)
+
         dot1 = self.screen.add_string_widget("d1", ".", x=7, y=1)
         dot2 = self.screen.add_string_widget("d2", ".", x=7, y=2)
+        ticker = PeriodicTimer(1, self.tickerWrapper(dot1, dot2))
+        ticker.start()
+
         while True:
             try:
                 h, t = dht.read_retry(dht.AM2302, pin, retries=5, delay_seconds=2)

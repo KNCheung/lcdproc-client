@@ -15,9 +15,9 @@ import click
 from screens import *
 
 def start(configure_file, pipe, pidFile, screen):
-    def sigTermHandler(f):
-        def handler(a, b):
-            print("received SIGTERM")
+    def signalHandler(f):
+        def handler(n, b):
+            print("received signal {0}".format(n))
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
             f.close()
             sys.exit(0)
@@ -45,7 +45,8 @@ def start(configure_file, pipe, pidFile, screen):
     except:
         print("PIPE file exists")
 
-    signal.signal(signal.SIGTERM, sigTermHandler(f))
+    signal.signal(signal.SIGTERM, signalHandler(f))
+    signal.signal(signal.SIGINT, signalHandler(f))
     config = ConfigParser.SafeConfigParser()
     config.read(configure_file)
 
@@ -70,6 +71,7 @@ def start(configure_file, pipe, pidFile, screen):
         t.start()
 
     fifo = open(pipe, 'r')
+    os.chmod(pipe, 0770)
     while True:
         s = fifo.readline()
         if not s:
