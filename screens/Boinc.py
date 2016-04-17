@@ -38,7 +38,7 @@ class Boinc(ScreenBase):
                     x = float(status[i]) * 100.0
                     s = '{0}:{1:0.2f}% '.format(i, x)
                 except:
-                    pass
+                    s = 'NO TASK'
                 text.set_text(s)
                 cpu.set_text(self.getCPU() + ' ' + str(self.getCPUTemp()) + 'C')
                 time.set_text(now().strftime("%H:%M"))
