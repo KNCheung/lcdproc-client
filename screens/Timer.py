@@ -15,10 +15,10 @@ class PeriodicTimer(threading.Thread):
         while True:
             try:
                 time.sleep(end - time.time())
+                self.func()
             except IOError as e:
                 print("ERROR: maybe the period was too short.")
             end += self.interval
-            self.func()
 
 if __name__ == "__main__":
     def f():
