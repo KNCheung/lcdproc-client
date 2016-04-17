@@ -26,6 +26,9 @@ class ScreenBase(threading.Thread):
     def intConfig(self, option, default=0):
         return int(self.config(option, default))
 
+    def floatConfig(self, option, default=0.0):
+        return float(self.config(option, default))
+
     def boolConfig(self, option, default=False):
         tmp = self.config(option, 'False')
         return tmp.lower() in ['1', 'true', 'on']

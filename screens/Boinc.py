@@ -33,15 +33,20 @@ class Boinc(ScreenBase):
 
         while True:
             status = subprocess.check_output("/usr/bin/boinccmd --get_simple_gui_info | /bin/grep 'fraction done' | /usr/bin/cut -d ':' -f2", shell=True).decode("utf8").split('\n')
+            hasTaskFlag = False
             for i in range(len(status)):
                 try:
                     x = float(status[i]) * 100.0
                     s = '{0}:{1:0.2f}% '.format(i, x)
+                    hasTaskFlag = True
                 except:
-                    s = 'NO TASK'
+                    continue
                 text.set_text(s)
-                cpu.set_text(self.getCPU() + ' ' + str(self.getCPUTemp()) + 'C')
-                time.set_text(now().strftime("%H:%M"))
                 second.set_length(now().second >> 3)
                 sleep(1)
+            cpu.set_text(self.getCPU() + ' ' + str(self.getCPUTemp()) + 'C')
+            time.set_text(now().strftime("%H:%M"))
+            if not hasTaskFlag:
+                text.set_text("NO TASK")
+                sleep(60 - now().second)
 
