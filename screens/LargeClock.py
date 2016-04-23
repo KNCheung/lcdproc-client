@@ -34,8 +34,6 @@ class LargeClock(ScreenBase):
 
         dot1 = self.screen.add_string_widget("d1", ".", x=7, y=1)
         dot2 = self.screen.add_string_widget("d2", ".", x=7, y=2)
-        ticker = PeriodicTimer(self.floatConfig('tickerInterval', 0.5), self.tickerWrapper(dot1, dot2))
-        ticker.start()
 
         while True:
             try:
